@@ -98,7 +98,7 @@ consumption_stats=$(
         ( (.date? + \" \" + ((if .hour == \"24:00\" then \"00:00\" else .hour end) | tostring)) | strptime(\"%Y/%m/%d %H:%M\") | todate | fromdate)
         ])
         | @tsv" |
-        $AWK '{printf "datadis_consumption,cups=%s,period=%s consumption=%s%s\n", $1, $2, $3, $4}'
+        $AWK '{printf "datadis_consumption,cups=%s,period=%s consumption=%s %s\n", $1, $2, $3, $4}'
 )
 
 datadis_power_json=$(
