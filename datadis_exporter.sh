@@ -93,12 +93,12 @@ consumption_stats=$(
         $JQ --raw-output "
         (.[] |
         [\"${CUPS}\",
-        .measureMagnitudeActive,
         (if .period == \"PUNTA\" then \"1\" elif .period == \"LLANO\" then \"2\" elif .period == \"VALLE\" then \"3\" else empty end),
+        .measureMagnitudeActive,
         ( (.date? + \" \" + ((if .hour == \"24:00\" then \"00:00\" else .hour end) | tostring)) | strptime(\"%Y/%m/%d %H:%M\") | todate | fromdate)
         ])
         | @tsv" |
-        $AWK '{printf "datadis_consumption,cups=%s consumption=%s,period=%s %s\n", $1, $2, $3, $4}'
+        $AWK '{printf "datadis_consumption,cups=%s,period=%s consumption=%s%s\n", $1, $2, $3, $4}'
 )
 
 datadis_power_json=$(
@@ -119,12 +119,12 @@ power_stats=$(
         $JQ --raw-output "
          (.[] |
          [\"${CUPS}\",
-         .maximoPotenciaDemandada,
          .periodo,
+         .maximoPotenciaDemandada,
          ( (.fechaMaximo? + ((if .hora == \"24:00\" then \"00:00\" else .hora end) | tostring)) | strptime(\"%Y/%m/%d %H:%M\") | todate | fromdate)
          ])
          | @tsv" |
-        $AWK '{printf "datadis_power,cups=%s max_power=%s,period=%s %s\n", $1, $2, $3, $4}'
+        $AWK '{printf "datadis_power,cups=%s,period=%s max_power=%s %s\n", $1, $2, $3, $4}'
 )
 
 stats=$(
