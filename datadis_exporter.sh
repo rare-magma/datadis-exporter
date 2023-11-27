@@ -94,7 +94,7 @@ consumption_stats=$(
         (.[] |
         [\"${CUPS}\",
         .measureMagnitudeActive,
-        (if .period == \"PUNTA\" then \"1\" else .period == \"LLANO\" then \"2\" else .period == \"VALLE\" then \"3\" end),
+        (if .period == \"PUNTA\" then \"1\" elif .period == \"LLANO\" then \"2\" elif .period == \"VALLE\" then \"3\" else empty end),
         ( (.date? + \" \" + ((if .hour == \"24:00\" then \"00:00\" else .hour end) | tostring)) | strptime(\"%Y/%m/%d %H:%M\") | todate | fromdate)
         ])
         | @tsv" |
