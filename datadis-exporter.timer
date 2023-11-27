@@ -1,0 +1,9 @@
+[Unit]
+Description=datadis Exporter Timer
+
+[Timer]
+OnCalendar=Weekly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

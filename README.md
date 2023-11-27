@@ -13,7 +13,6 @@ Bash script that uploads the energy consumption data from the DATADIS API to inf
 - [jq](https://stedolan.github.io/jq/)
 - Optional: [make](https://www.gnu.org/software/make/) - for automatic installation support
 - [systemd](https://systemd.io/)
-- [coreutils (tr)](https://www.gnu.org/software/coreutils/)
 
 ## Relevant documentation
 
@@ -27,7 +26,7 @@ Bash script that uploads the energy consumption data from the DATADIS API to inf
 
 For convenience, you can install this exporter with the following command or follow the manual process described in the next paragraph.
 
-```
+```bash
 make install
 $EDITOR $HOME/.config/datadis_exporter.conf
 ```
@@ -40,19 +39,19 @@ $EDITOR $HOME/.config/datadis_exporter.conf
 
 3. Copy the systemd unit and timer to `$HOME/.config/systemd/user/`:
 
-```
+```bash
 cp datadis-exporter.* $HOME/.config/systemd/user/
 ```
 
-5. and run the following command to activate the timer:
+4. and run the following command to activate the timer:
 
-```
+```bash
 systemctl --user enable --now datadis-exporter.timer
 ```
 
 It's possible to trigger the execution by running manually:
 
-```
+```bash
 systemctl --user start datadis-exporter.service
 ```
 
@@ -60,7 +59,7 @@ systemctl --user start datadis-exporter.service
 
 The config file has a few options:
 
-```
+```bash
 INFLUXDB_HOST='influxdb.example.com'
 INFLUXDB_API_TOKEN='ZXhhbXBsZXRva2VuZXhhcXdzZGFzZGptcW9kcXdvZGptcXdvZHF3b2RqbXF3ZHFhc2RhCg=='
 ORG='home'
@@ -68,6 +67,7 @@ BUCKET='datadis'
 DATADIS_USERNAME='username'
 DATADIS_PASSWORD='password'
 CUPS='ES0000000000000000XX0X'
+DISTRIBUTOR_CODE='1'
 ```
 
 - `INFLUXDB_HOST` should be the FQDN of the influxdb server.
@@ -77,18 +77,27 @@ CUPS='ES0000000000000000XX0X'
   - This token should have write access to the `BUCKET` defined above.
 - `DATADIS_USERNAME` and `DATADIS_PASSWORD`should be the credentials used to access the DATADIS website
 - `CUPS` should be the Código Unificado de Punto de Suministro (CUPS)
+- `DISTRIBUTOR_CODE` should be one of:
+  - 1: Viesgo,
+  - 2: E-distribución
+  - 3: E-redes
+  - 4: ASEME
+  - 5: UFD
+  - 6: EOSA
+  - 7: CIDE
+  - 8: IDE
 
 ## Troubleshooting
 
 Run the script manually with bash set to trace:
 
-```
+```bash
 bash -x $HOME/.local/bin/datadis_exporter.sh
 ```
 
 Check the systemd service logs and timer info with:
 
-```
+```bash
 journalctl --user --unit datadis-exporter.service
 systemctl --user list-timers
 ```
@@ -97,13 +106,15 @@ systemctl --user list-timers
 
 The DATADIS API call period is limited to the last 30 days by default.
 
-- pX: The energy consumption in kWh for the corresponding period type
+- consumption: The energy consumption in kWh
+- period: the period type (p1: punta, p2: llano, p3: valle)
 - cups: The cups corresponding to the consumption point above
 
 ## Exported metrics example
 
-```
-datadis_consumption,cups=ES0000000000000000XX0X p1=0.123,p2=0,p3=0,p4=0,p5=0,p6=0 1672610400
+```bash
+datadis_consumption,cups=ES0000000000000000XX0X consumption=0.123,period=1 1672610400
+datadis_power,cups=ES0000000000000000XX0X max_power=0.123,period=1 1686869100
 ```
 
 ## Example grafana dashboard
@@ -124,7 +135,7 @@ Import it by doing the following:
 
 For convenience, you can uninstall this exporter with the following command or follow the process described in the next paragraph.
 
-```
+```bash
 make uninstall
 ```
 
@@ -132,13 +143,13 @@ make uninstall
 
 Run the following command to deactivate the timer:
 
-```
+```bash
 systemctl --user disable --now datadis-exporter.timer
 ```
 
 Delete the following files:
 
-```
+```bash
 ~/.local/bin/datadis_exporter.sh
 ~/.config/datadis_exporter.conf
 ~/.config/systemd/user/datadis-exporter.timer
