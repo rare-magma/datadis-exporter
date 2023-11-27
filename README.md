@@ -1,6 +1,6 @@
 # datadis-exporter
 
-Bash script that uploads the energy consumption data from the DATADIS API to influxdb on a weekly basis
+Bash script that uploads the energy consumption and maximum power usage data from the DATADIS API to influxdb on a daily basis
 
 ## Dependencies
 

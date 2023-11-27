@@ -2,7 +2,7 @@
 Description=datadis Exporter Timer
 
 [Timer]
-OnCalendar=Weekly
+OnCalendar=Daily
 Persistent=true
 
 [Install]
