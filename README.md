@@ -104,17 +104,19 @@ systemctl --user list-timers
 
 ## Exported metrics
 
-The DATADIS API call period is limited to the last 30 days by default.
+The consumption DATADIS API call period is limited to the last 30 days by default.
+The power call is limited to the current year's first and last day.
 
 - consumption: The energy consumption in kWh
-- period: the period type (p1: punta, p2: llano, p3: valle)
+- period: The period type (p1: punta, p2: llano, p3: valle)
 - cups: The cups corresponding to the consumption point above
+- max_power: The highest electrical power demanded in kWh
 
 ## Exported metrics example
 
 ```bash
-datadis_consumption,cups=ES0000000000000000XX0X consumption=0.123,period=1 1672610400
-datadis_power,cups=ES0000000000000000XX0X max_power=0.123,period=1 1686869100
+datadis_consumption,cups=ES0000000000000000XX0X,period=1 consumption=0.123 1672610400
+datadis_power,cups=ES0000000000000000XX0X,period=1 max_power=0.123 1686869100
 ```
 
 ## Example grafana dashboard
@@ -160,6 +162,7 @@ Delete the following files:
 
 This project takes inspiration from the following:
 
+- [MrMarble/datadis](https://github.com/MrMarble/datadis)
 - [rare-magma/pbs-exporter](https://github.com/rare-magma/pbs-exporter)
 - [mad-ady/prometheus-borg-exporter](https://github.com/mad-ady/prometheus-borg-exporter)
 - [OVYA/prometheus-borg-exporter](https://github.com/OVYA/prometheus-borg-exporter)
