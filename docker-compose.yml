@@ -16,4 +16,4 @@ services:
     volumes:
       - ./:/app:z
     labels:
-      net.reddec.scheduler.cron: "5 * * * *"
+      net.reddec.scheduler.cron: "@daily"
