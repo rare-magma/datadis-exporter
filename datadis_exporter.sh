@@ -10,8 +10,12 @@ for program in "${dependencies[@]}"; do
     }
 done
 
-# shellcheck source=/dev/null
-source "$CREDENTIALS_DIRECTORY/creds"
+if [[ "${RUNNING_IN_DOCKER}" ]]; then
+    source "/app/datadis_exporter.conf"
+else
+    # shellcheck source=/dev/null
+    source "$CREDENTIALS_DIRECTORY/creds"
+fi
 
 [[ -z "${INFLUXDB_HOST}" ]] && echo >&2 "INFLUXDB_HOST is empty. Aborting" && exit 1
 [[ -z "${INFLUXDB_API_TOKEN}" ]] && echo >&2 "INFLUXDB_API_TOKEN is empty. Aborting" && exit 1

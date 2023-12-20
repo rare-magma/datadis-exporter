@@ -11,16 +11,43 @@ Bash script that uploads the energy consumption and maximum power usage data fro
 - [gzip](https://www.gnu.org/software/gzip/)
 - [influxdb v2+](https://docs.influxdata.com/influxdb/v2.6/)
 - [jq](https://stedolan.github.io/jq/)
-- Optional: [make](https://www.gnu.org/software/make/) - for automatic installation support
 - [systemd](https://systemd.io/)
+- Optional:
+  - [make](https://www.gnu.org/software/make/) - for automatic installation support
+  - [docker](https://docs.docker.com/)
 
 ## Relevant documentation
 
 - [DATADIS](https://datadis.es/)
 - [InfluxDB API](https://docs.influxdata.com/influxdb/v2.6/write-data/developer-tools/api/)
 - [Systemd Timers](https://www.freedesktop.org/software/systemd/man/systemd.timer.html)
+- [compose-scheduler](https://github.com/reddec/compose-scheduler)
 
 ## Installation
+
+### With Docker
+
+#### docker-compose
+
+1. Configure `datadis_exporter.conf` (see the configuration section below).
+1. Run it.
+
+   ```bash
+   docker compose up --detach
+   ```
+
+#### docker build & run
+
+1. Build the docker image.
+
+   ```bash
+   docker build . --tag datadis-exporter
+   ```
+
+1. Configure `datadis_exporter.conf` (see the configuration section below).
+1. Run it.
+
+   `docker run --rm --init --tty --interactive --volume $(pwd):/app localhost/datadis-exporter`
 
 ### With the Makefile
 
@@ -159,6 +186,8 @@ Delete the following files:
 ```
 
 ## Credits
+
+- [reddec/compose-scheduler](https://github.com/reddec/compose-scheduler)
 
 This project takes inspiration from the following:
 
