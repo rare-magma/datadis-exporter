@@ -12,9 +12,11 @@ done
 
 if [[ "${RUNNING_IN_DOCKER}" ]]; then
     source "/app/datadis_exporter.conf"
-else
+elif [[ -f $CREDENTIALS_DIRECTORY/creds ]]; then
     # shellcheck source=/dev/null
     source "$CREDENTIALS_DIRECTORY/creds"
+else
+    source "./datadis_exporter.conf"
 fi
 
 [[ -z "${INFLUXDB_HOST}" ]] && echo >&2 "INFLUXDB_HOST is empty. Aborting" && exit 1
