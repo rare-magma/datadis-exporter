@@ -72,6 +72,7 @@ datadis_contract=$(
         --header 'Accept-Encoding: gzip, deflate, br' \
         --header "Authorization: Bearer $datadis_token" \
         --header 'Content-Type: application/json' \
+        --header 'User-Agent: Mozilla/5.0' \
         --data-raw "{\"cups\":[\"$CUPS\"],\"distributor\":\"$DISTRIBUTOR_CODE\"}" \
         "$DATADIS_CONTRACT_API_URL" |
         $JQ '.response | .[]'
@@ -89,6 +90,7 @@ datadis_json=$(
         --header 'Accept-Encoding: gzip, deflate, br' \
         --header "Authorization: Bearer $datadis_token" \
         --header 'Content-Type: application/json' \
+        --header 'User-Agent: Mozilla/5.0' \
         --data-raw "{ \"fechaInicial\":\"$LAST_MONTH\", \"fechaFinal\":\"$TODAY\", \"cups\":[\"$CUPS\"], \"distributor\":\"$DISTRIBUTOR_CODE\", \"fraccion\":0, \"hasAutoConsumo\":false, \"provinceCode\":\"$datadis_provincia_code\", \"tarifaCode\":\"$datadis_tarifa_code\", \"tipoPuntoMedida\":$datadis_point_type, \"tipoAutoConsumo\":$datadis_autoconsumo }" \
         "$DATADIS_CONSUMPTION_API_URL" |
         $JQ '.response.timeCurveList'
@@ -115,6 +117,7 @@ datadis_power_json=$(
         --header 'Accept-Encoding: gzip, deflate, br' \
         --header "Authorization: Bearer $datadis_token" \
         --header 'Content-Type: application/json' \
+        --header 'User-Agent: Mozilla/5.0' \
         --data-raw "{ \"cups\":[\"$CUPS\"], \"distributor\":\"$DISTRIBUTOR_CODE\", \"fechaFinal\":\"$CURRENT_YEAR/12/31\", \"fechaInicial\":\"$CURRENT_YEAR/01/01\" }" \
         "$DATADIS_POWER_API_URL" |
         $JQ '.response'
