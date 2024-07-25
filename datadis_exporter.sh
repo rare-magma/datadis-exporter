@@ -49,8 +49,10 @@ datadis_token=$(
     $CURL --silent --fail --show-error \
         --request POST \
         --compressed \
+        --header 'User-Agent: Mozilla/5.0' \
         --data "username=$DATADIS_USERNAME" \
         --data "password=$DATADIS_PASSWORD" \
+        --data 'origin="WEB"' \
         "$DATADIS_LOGIN_URL"
 )
 
@@ -59,6 +61,7 @@ datadis_point_type=$(
         --compressed \
         --header "Accept: application/json" \
         --header 'Accept-Encoding: gzip, deflate, br' \
+        --header 'User-Agent: Mozilla/5.0' \
         --header "Authorization: Bearer $datadis_token" \
         "$DATADIS_SUPPLIES_API_URL" |
         $JQ '.[].pointType'
