@@ -2,6 +2,17 @@ version: "3"
 services:
   scheduler:
     image: ghcr.io/reddec/compose-scheduler:1.1.0
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 250m
+          pids: 1024
     privileged: true
     restart: unless-stopped
     volumes:
