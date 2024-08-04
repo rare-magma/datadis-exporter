@@ -3,6 +3,8 @@ name: Create and publish a container image
 on:
   push:
     branches: main
+  schedule:
+    - cron: "2 02 4 * *"
 
 env:
   REGISTRY: ghcr.io
