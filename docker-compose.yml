@@ -1,19 +1,27 @@
 version: "3"
 services:
   scheduler:
-    image: ghcr.io/reddec/compose-scheduler:1.0.0
+    image: ghcr.io/reddec/compose-scheduler:1.1.0
     privileged: true
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
   datadis-exporter:
-    image: datadis-exporter:latest
+    image: ghcr.io/rare-magma/datadis-exporter:latest
     init: true
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 64m
+          pids: 16
     volumes:
-      - ./:/app:z
+      - ./datadis_exporter.conf:/app/datadis_exporter.conf:ro
     labels:
       net.reddec.scheduler.cron: "@daily"

@@ -47,7 +47,9 @@ Bash script that uploads the energy consumption and maximum power usage data fro
 1. Configure `datadis_exporter.conf` (see the configuration section below).
 1. Run it.
 
-   `docker run --rm --init --tty --interactive --volume $(pwd):/app localhost/datadis-exporter`
+    ```bash
+    docker run --rm --init --tty --interactive --read-only --cap-drop ALL --security-opt no-new-privileges:true --cpus 2 -m 64m --pids-limit 16 --volume ./datadis_exporter.conf:/app/datadis_exporter.conf:ro ghcr.io/rare-magma/datadis-exporter:latest
+    ```
 
 ### With the Makefile
 
