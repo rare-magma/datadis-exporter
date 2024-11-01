@@ -1,5 +1,5 @@
 .github/
-datadis_exporter.conf
+datadis_exporter.json
 *.png
 *.json
 *.service

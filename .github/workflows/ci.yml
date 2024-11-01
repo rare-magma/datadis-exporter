@@ -1,4 +1,4 @@
-name: Create and publish a container image
+name: Create and publish artifacts
 
 on:
   push:
@@ -9,6 +9,10 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-push-image:
@@ -44,3 +48,30 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           labels: ${{ steps.meta.outputs.labels }}
+
+  releases-matrix:
+    permissions:
+      contents: write
+    name: Release Go Binaries
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux]
+        goarch: [amd64, arm64]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+    - name: Build
+      run: go build -ldflags="-s -w" -trimpath -o datadis_exporter main.go
+      env:
+        CGO_ENABLED: 0
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+    - name: Compress
+      run: zip datadis_exporter-${{ matrix.goos }}-${{ matrix.goarch }}.zip datadis_exporter
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: datadis_exporter-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+        tag_name: latest

@@ -1,0 +1,10 @@
+{
+	"InfluxDBHost": "",
+	"InfluxDBApiToken": "",
+	"Org": "",
+	"Bucket": "",
+	"DatadisUsername": "",
+	"DatadisPassword": "",
+	"Cups": "",
+	"DistributorCode": ""
+}

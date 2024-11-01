@@ -1,20 +1,15 @@
 # datadis-exporter
 
-Bash script that uploads the energy consumption and maximum power usage data from the DATADIS API to influxdb on a daily basis
+CLI tool that uploads the energy consumption and maximum power usage data from the DATADIS API to influxdb on a daily basis
 
 ## Dependencies
 
-- [awk](https://www.gnu.org/software/gawk/manual/gawk.html)
-- [bash](https://www.gnu.org/software/bash/)
-- [coreutils (date)](https://www.gnu.org/software/coreutils/)
-- [curl](https://curl.se/)
-- [gzip](https://www.gnu.org/software/gzip/)
+- [go](https://go.dev/)
 - [influxdb v2+](https://docs.influxdata.com/influxdb/v2.6/)
-- [jq](https://stedolan.github.io/jq/)
-- [systemd](https://systemd.io/)
 - Optional:
   - [make](https://www.gnu.org/software/make/) - for automatic installation support
   - [docker](https://docs.docker.com/)
+  - [systemd](https://systemd.io/)
 
 ## Relevant documentation
 
@@ -29,7 +24,7 @@ Bash script that uploads the energy consumption and maximum power usage data fro
 
 #### docker-compose
 
-1. Configure `datadis_exporter.conf` (see the configuration section below).
+1. Configure `datadis_exporter.json` (see the configuration section below).
 1. Run it.
 
    ```bash
@@ -44,11 +39,11 @@ Bash script that uploads the energy consumption and maximum power usage data fro
    docker build . --tag datadis-exporter
    ```
 
-1. Configure `datadis_exporter.conf` (see the configuration section below).
+1. Configure `datadis_exporter.json` (see the configuration section below).
 1. Run it.
 
     ```bash
-    docker run --rm --init --tty --interactive --read-only --cap-drop ALL --security-opt no-new-privileges:true --cpus 2 -m 64m --pids-limit 16 --volume ./datadis_exporter.conf:/app/datadis_exporter.conf:ro ghcr.io/rare-magma/datadis-exporter:latest
+    docker run --rm --init --tty --interactive --read-only --cap-drop ALL --security-opt no-new-privileges:true --cpus 2 -m 64m --pids-limit 16 --volume ./datadis_exporter.json:/app/datadis_exporter.json:ro ghcr.io/rare-magma/datadis-exporter:latest
     ```
 
 ### With the Makefile
@@ -56,27 +51,34 @@ Bash script that uploads the energy consumption and maximum power usage data fro
 For convenience, you can install this exporter with the following command or follow the manual process described in the next paragraph.
 
 ```bash
+make build
 make install
-$EDITOR $HOME/.config/datadis_exporter.conf
+$EDITOR $HOME/.config/datadis_exporter.json
 ```
 
 ### Manually
 
-1. Copy `datadis_exporter.sh` to `$HOME/.local/bin/` and make it executable.
+1. Build `datadis_exporter` with:
 
-2. Copy `datadis_exporter.conf` to `$HOME/.config/`, configure it (see the configuration section below) and make it read only.
+    ```bash
+    go build -ldflags="-s -w" -o datadis_exporter main.go`
+    ```
 
-3. Copy the systemd unit and timer to `$HOME/.config/systemd/user/`:
+2. Copy `datadis_exporter` to `$HOME/.local/bin/` and make it executable.
 
-```bash
-cp datadis-exporter.* $HOME/.config/systemd/user/
-```
+3. Copy `datadis_exporter.json` to `$HOME/.config/`, configure it (see the configuration section below) and make it read only.
 
-4. and run the following command to activate the timer:
+4. Copy the systemd unit and timer to `$HOME/.config/systemd/user/`:
 
-```bash
-systemctl --user enable --now datadis-exporter.timer
-```
+    ```bash
+    cp datadis-exporter.* $HOME/.config/systemd/user/
+    ```
+
+5. and run the following command to activate the timer:
+
+    ```bash
+    systemctl --user enable --now datadis-exporter.timer
+    ```
 
 It's possible to trigger the execution by running manually:
 
@@ -88,25 +90,27 @@ systemctl --user start datadis-exporter.service
 
 The config file has a few options:
 
-```bash
-INFLUXDB_HOST='influxdb.example.com'
-INFLUXDB_API_TOKEN='ZXhhbXBsZXRva2VuZXhhcXdzZGFzZGptcW9kcXdvZGptcXdvZHF3b2RqbXF3ZHFhc2RhCg=='
-ORG='home'
-BUCKET='datadis'
-DATADIS_USERNAME='username'
-DATADIS_PASSWORD='password'
-CUPS='ES0000000000000000XX0X'
-DISTRIBUTOR_CODE='1'
+```json
+{
+ "InfluxDBHost": "influxdb.example.com",
+ "InfluxDBApiToken": "ZXhhbXBsZXRva2VuZXhhcXdzZGFzZGptcW9kcXdvZGptcXdvZHF3b2RqbXF3ZHFhc2RhCg==",
+ "Org": "home",
+ "Bucket": "datadis",
+ "DatadisUsername": "username",
+ "DatadisPassword": "password",
+ "Cups": "ES0000000000000000XX0X",
+ "DistributorCode": "1"
+}
 ```
 
-- `INFLUXDB_HOST` should be the FQDN of the influxdb server.
-- `ORG` should be the name of the influxdb organization that contains the energy consumption data bucket defined below.
-- `BUCKET` should be the name of the influxdb bucket that will hold the energy consumption data.
-- `INFLUXDB_API_TOKEN` should be the influxdb API token value.
+- `InfluxDBHost` should be the FQDN of the influxdb server.
+- `Org` should be the name of the influxdb organization that contains the energy consumption data bucket defined below.
+- `Bucket` should be the name of the influxdb bucket that will hold the energy consumption data.
+- `InfluxDBApiToken` should be the influxdb API token value.
   - This token should have write access to the `BUCKET` defined above.
-- `DATADIS_USERNAME` and `DATADIS_PASSWORD`should be the credentials used to access the DATADIS website
-- `CUPS` should be the Código Unificado de Punto de Suministro (CUPS)
-- `DISTRIBUTOR_CODE` should be one of:
+- `DatadisUsername` and `DATADIS_PASSWORD`should be the credentials used to access the DATADIS website
+- `Cups` should be the Código Unificado de Punto de Suministro (CUPS)
+- `DistributorCode` should be one of:
   - 1: Viesgo,
   - 2: E-distribución
   - 3: E-redes
@@ -117,12 +121,6 @@ DISTRIBUTOR_CODE='1'
   - 8: IDE
 
 ## Troubleshooting
-
-Run the script manually with bash set to trace:
-
-```bash
-bash -x $HOME/.local/bin/datadis_exporter.sh
-```
 
 Check the systemd service logs and timer info with:
 
@@ -181,8 +179,8 @@ systemctl --user disable --now datadis-exporter.timer
 Delete the following files:
 
 ```bash
-~/.local/bin/datadis_exporter.sh
-~/.config/datadis_exporter.conf
+~/.local/bin/datadis_exporter
+~/.config/datadis_exporter.json
 ~/.config/systemd/user/datadis-exporter.timer
 ~/.config/systemd/user/datadis-exporter.service
 ```
@@ -194,6 +192,3 @@ Delete the following files:
 This project takes inspiration from the following:
 
 - [MrMarble/datadis](https://github.com/MrMarble/datadis)
-- [rare-magma/pbs-exporter](https://github.com/rare-magma/pbs-exporter)
-- [mad-ady/prometheus-borg-exporter](https://github.com/mad-ady/prometheus-borg-exporter)
-- [OVYA/prometheus-borg-exporter](https://github.com/OVYA/prometheus-borg-exporter)

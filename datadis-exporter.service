@@ -3,8 +3,8 @@ Description=datadis exporter
 After=network-online.target
 
 [Service]
-ExecStart=/home/%u/.local/bin/datadis_exporter.sh
-LoadCredential=creds:/home/%u/.config/datadis_exporter.conf
+ExecStart=/home/%u/.local/bin/datadis_exporter
+LoadCredential=creds:/home/%u/.config/datadis_exporter.json
 Type=oneshot
 
 # Security hardening options

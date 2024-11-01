@@ -20,7 +20,6 @@ services:
 
   datadis-exporter:
     image: ghcr.io/rare-magma/datadis-exporter:latest
-    init: true
     read_only: true
     cap_drop:
       - ALL
@@ -33,6 +32,6 @@ services:
           memory: 64m
           pids: 16
     volumes:
-      - ./datadis_exporter.conf:/app/datadis_exporter.conf:ro
+      - ./datadis_exporter.json:/app/datadis_exporter.json:ro
     labels:
       net.reddec.scheduler.cron: "@daily"
