@@ -61,7 +61,7 @@ $EDITOR $HOME/.config/datadis_exporter.json
 1. Build `datadis_exporter` with:
 
     ```bash
-    go build -ldflags="-s -w" -o datadis_exporter main.go`
+    go build -ldflags="-s -w" -o datadis_exporter main.go
     ```
 
 2. Copy `datadis_exporter` to `$HOME/.local/bin/` and make it executable.
