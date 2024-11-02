@@ -135,13 +135,13 @@ func main() {
 	}
 
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 60 * time.Second,
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
-				Timeout: 10 * time.Second,
+				Timeout: 60 * time.Second,
 			}).DialContext,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ResponseHeaderTimeout: 10 * time.Second,
+			TLSHandshakeTimeout:   60 * time.Second,
+			ResponseHeaderTimeout: 60 * time.Second,
 		},
 	}
 
