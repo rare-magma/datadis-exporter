@@ -7,16 +7,29 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
 	"time"
 )
 
+type DistributorError struct {
+	Code             string `json:"distributorCode"`
+	Name             string `json:"distributorName"`
+	ErrorCode        string `json:"errorCode"`
+	ErrorDescription string `json:"errorDescription"`
+}
+
 type Supplies struct {
 	PointType float64 `json:"pointType"`
+}
+
+type SuppliesResponse struct {
+	Supplies         []Supplies         `json:"supplies"`
+	DistributorError []DistributorError `json:"distributorError"`
 }
 
 type ContractRequestPayload struct {
@@ -62,22 +75,16 @@ type ConsumptionResponse struct {
 	Response TimeCurveList `json:"response"`
 }
 
-type PowerRequestPayload struct {
-	FechaInicial string   `json:"fechaInicial"`
-	FechaFinal   string   `json:"fechaFinal"`
-	Cups         []string `json:"cups"`
-	Distributor  string   `json:"distributor"`
-}
-
 type Power struct {
-	Periodo                 string  `json:"periodo"`
-	MaximoPotenciaDemandada float64 `json:"maximoPotenciaDemandada"`
-	Date                    string  `json:"fechaMaximo"`
-	Hour                    string  `json:"hora"`
+	Period   string  `json:"period"`
+	MaxPower float64 `json:"maximoPotenciaDemandada"`
+	Date     string  `json:"date"`
+	Time     string  `json:"time"`
 }
 
 type PowerResponse struct {
-	Response []Power `json:"response"`
+	Response         []Power            `json:"maxPower"`
+	DistributorError []DistributorError `json:"distributorError"`
 }
 
 type Config struct {
@@ -92,10 +99,11 @@ type Config struct {
 }
 
 const datadisLoginUrl = "https://datadis.es/nikola-auth/tokens/login"
-const datadisSuppliesApiUrl = "https://datadis.es/api-private/api/get-supplies"
+const datadisSuppliesApiUrl = "https://datadis.es/api-private/api/get-supplies-v2"
 const datadisContractApiUrl = "https://datadis.es/api-private/supply-data/contractual-data"
 const datadisConsumptionApiUrl = "https://datadis.es/api-private/supply-data/v2/time-curve-data/hours"
-const datadisPowerApiUrl = "https://datadis.es/api-private/supply-data/max-power"
+const datadisPowerApiUrl = "https://datadis.es/api-private/api/get-max-power-v2"
+
 
 func main() {
 	confFilePath := "datadis_exporter.json"
@@ -171,7 +179,6 @@ func main() {
 		defer wg.Done()
 		suppliesReq, _ := http.NewRequest("GET", datadisSuppliesApiUrl, nil)
 		suppliesReq.Header.Set("Accept", "application/json")
-		suppliesReq.Header.Set("Accept-Encoding", "gzip")
 		suppliesReq.Header.Set("Authorization", token)
 		suppliesReq.Header.Set("User-Agent", "Mozilla/5.0")
 		suppliesResp, err := client.Do(suppliesReq)
@@ -186,10 +193,17 @@ func main() {
 		if suppliesResp.StatusCode != http.StatusOK {
 			log.Fatalln("Error getting supplies data:", string(suppliesJson))
 		}
-		err = json.Unmarshal(suppliesJson, &supplies)
+		var suppliesData SuppliesResponse
+		err = json.Unmarshal(suppliesJson, &suppliesData)
 		if err != nil {
 			log.Fatalln("Error unmarshalling supplies response data: ", err)
 		}
+		for _, derror := range suppliesData.DistributorError {
+			if derror.Code == config.DistributorCode {
+				log.Fatalln("Error getting supplies data from distributor:", derror.ErrorCode, derror.ErrorDescription)
+			}
+		}
+		*supplies = suppliesData.Supplies
 	}(&supplies)
 
 	wg.Add(1)
@@ -300,16 +314,15 @@ func main() {
 	go func(payload *bytes.Buffer) {
 		defer wg.Done()
 
-		beginningOfYear := time.Date(time.Now().Year(), time.January, 1, 0, 0, 0, 0, time.UTC).Format("2006/01/02")
-		endOfYear := time.Date(time.Now().Year(), time.December, 31, 0, 0, 0, 0, time.UTC).Format("2006/01/02")
-		powerData := PowerRequestPayload{
-			FechaInicial: beginningOfYear,
-			FechaFinal:   endOfYear,
-			Cups:         []string{config.Cups},
-			Distributor:  config.DistributorCode,
-		}
-		powerDataJson, _ := json.Marshal(powerData)
-		powerReq, _ := http.NewRequest("POST", datadisPowerApiUrl, bytes.NewReader(powerDataJson))
+		beginningOfYear := time.Date(time.Now().Year(), time.January, 1, 0, 0, 0, 0, time.UTC).Format("2006/01")
+		endOfYear := time.Date(time.Now().Year(), time.December, 31, 0, 0, 0, 0, time.UTC).Format("2006/01")
+		params := url.Values{}
+		params.Add("cups", config.Cups)
+		params.Add("distributorCode", config.DistributorCode)
+		params.Add("startDate", beginningOfYear)
+		params.Add("endDate", endOfYear)
+
+		powerReq, _ := http.NewRequest("GET", datadisPowerApiUrl+"?"+params.Encode(), nil)
 		powerReq.Header.Set("Accept", "application/json")
 		powerReq.Header.Set("Authorization", token)
 		powerReq.Header.Set("Content-Type", "application/json")
@@ -332,18 +345,24 @@ func main() {
 			log.Fatalln("Error unmarshalling power response data: ", err)
 		}
 
-		for _, stat := range power.Response {
-			if stat.Hour == "24:00" {
-				stat.Hour = "00:00"
+		for _, derror := range power.DistributorError {
+			if derror.Code == config.DistributorCode {
+				log.Fatalln("Error getting power data from distributor:", derror.ErrorCode, derror.ErrorDescription)
 			}
-			timestamp, err := time.Parse("2006/01/02 15:04", stat.Date+" "+stat.Hour)
+		}
+
+		for _, stat := range power.Response {
+			if stat.Time == "24:00" {
+				stat.Time = "00:00"
+			}
+			timestamp, err := time.Parse("2006/01/02 15:04", stat.Date+" "+stat.Time)
 			if err != nil {
 				log.Fatalln("Error parsing timestamp:", err)
 			}
 			influxLine := fmt.Sprintf("datadis_power,cups=%s,period=%s max_power=%.3f %v\n",
 				config.Cups,
-				stat.Periodo,
-				stat.MaximoPotenciaDemandada,
+				stat.Period,
+				stat.MaxPower,
 				timestamp.Unix(),
 			)
 			payload.WriteString(influxLine)
