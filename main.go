@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"os"
 	"strings"
@@ -103,7 +103,6 @@ const datadisSuppliesApiUrl = "https://datadis.es/api-private/api/get-supplies-v
 const datadisContractApiUrl = "https://datadis.es/api-private/supply-data/contractual-data"
 const datadisConsumptionApiUrl = "https://datadis.es/api-private/supply-data/v2/time-curve-data/hours"
 const datadisPowerApiUrl = "https://datadis.es/api-private/api/get-max-power-v2"
-
 
 func main() {
 	confFilePath := "datadis_exporter.json"
