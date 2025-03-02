@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -154,6 +155,13 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 	return resp, err
 }
 
+func HandleApiError(message string, err error, apiErrors *atomic.Int64) {
+	apiErrors.Add(1)
+	log.SetOutput(os.Stderr)
+	log.Println(message, err)
+	log.SetOutput(os.Stdout)
+}
+
 func main() {
 	confFilePath := "datadis_exporter.json"
 	confData, err := os.Open(confFilePath)
@@ -201,6 +209,7 @@ func main() {
 		Transport: transport,
 	}
 
+	var apiErrors atomic.Int64
 	data := "username=" + config.DatadisUsername + "&password=" + config.DatadisPassword + "&origin='WEB'"
 	authReq, _ := http.NewRequest("POST", datadisLoginUrl, strings.NewReader(data))
 	authReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -290,7 +299,7 @@ func main() {
 
 	payload := bytes.Buffer{}
 	wg.Add(1)
-	go func(payload *bytes.Buffer) {
+	go func(payload *bytes.Buffer, apiErrors *atomic.Int64) {
 		defer wg.Done()
 
 		lastMonth := time.Now().AddDate(0, -1, 0).Format("2006/01/02")
@@ -315,7 +324,8 @@ func main() {
 		consumptionReq.Header.Set("User-Agent", "Mozilla/5.0")
 		consumptionResp, err := client.Do(consumptionReq)
 		if err != nil {
-			log.Fatalln("Error requesting consumption data: ", err)
+			HandleApiError("Error requesting consumption data: ", err, apiErrors)
+			return
 		}
 		defer consumptionResp.Body.Close()
 		consumptionJson, err := io.ReadAll(consumptionResp.Body)
@@ -323,7 +333,8 @@ func main() {
 			log.Fatalln("Error reading consumption data: ", err)
 		}
 		if consumptionResp.StatusCode != http.StatusOK {
-			log.Fatalln("Error getting consumption data:", string(consumptionJson))
+			HandleApiError(fmt.Sprintf("Error getting consumption data: %s", string(consumptionJson)), nil, apiErrors)
+			return
 		}
 		var consumption ConsumptionResponse
 		err = json.Unmarshal(consumptionJson, &consumption)
@@ -356,10 +367,10 @@ func main() {
 			payload.WriteString(influxLine)
 
 		}
-	}(&payload)
+	}(&payload, &apiErrors)
 
 	wg.Add(1)
-	go func(payload *bytes.Buffer) {
+	go func(payload *bytes.Buffer, apiErrors *atomic.Int64) {
 		defer wg.Done()
 
 		beginningOfYear := time.Date(time.Now().Year(), time.January, 1, 0, 0, 0, 0, time.UTC).Format("2006/01")
@@ -377,7 +388,7 @@ func main() {
 		powerReq.Header.Set("User-Agent", "Mozilla/5.0")
 		powerResp, err := client.Do(powerReq)
 		if err != nil {
-			log.Fatalln("Error requesting power data: ", err)
+			HandleApiError("Error requesting power data: ", err, apiErrors)
 		}
 		defer powerResp.Body.Close()
 		powerJson, err := io.ReadAll(powerResp.Body)
@@ -385,8 +396,10 @@ func main() {
 			log.Fatalln("Error reading power data: ", err)
 		}
 		if powerResp.StatusCode != http.StatusOK {
-			log.Fatalln("Error getting power data:", string(powerJson))
+			HandleApiError(fmt.Sprintf("Error getting power data: %s", string(powerJson)), nil, apiErrors)
+			return
 		}
+
 		var power PowerResponse
 		err = json.Unmarshal(powerJson, &power)
 		if err != nil {
@@ -395,7 +408,8 @@ func main() {
 
 		for _, derror := range power.DistributorError {
 			if derror.Code == config.DistributorCode {
-				log.Fatalln("Error getting power data from distributor:", derror.ErrorCode, derror.ErrorDescription)
+				HandleApiError(fmt.Sprintf("Error getting power data from distributor: %s %s", derror.ErrorCode, derror.ErrorDescription), nil, apiErrors)
+				return
 			}
 		}
 
@@ -416,7 +430,7 @@ func main() {
 			payload.WriteString(influxLine)
 
 		}
-	}(&payload)
+	}(&payload, &apiErrors)
 
 	wg.Wait()
 
@@ -447,5 +461,9 @@ func main() {
 	}
 	if resp.StatusCode != 204 {
 		log.Fatal("Error sending data: ", string(body))
+	}
+
+	if apiErrors.Load() > 0 {
+		log.Fatalf("API errors: %d\n", apiErrors.Load())
 	}
 }
