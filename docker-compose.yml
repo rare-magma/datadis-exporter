@@ -32,6 +32,6 @@ services:
           memory: 64m
           pids: 16
     volumes:
-      - ./datadis_exporter.json:/app/datadis_exporter.json:ro
+      - ./datadis_exporter.json:/tmp/datadis_exporter.json:ro
     labels:
       net.reddec.scheduler.cron: "@daily"
